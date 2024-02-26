@@ -1,7 +1,8 @@
 /*
-Programa ESP32 ADC
-date created: 21/02/24
-last modified: 21/02/24
+Autor: Mario García
+Programa ESP32 ADC Para distancia con potenciometro lineal
+date created: 25/02/24
+last modified: 25/02/24
 */
 
 #include <stdio.h>
@@ -63,7 +64,7 @@ esp_err_t get_ADC_value(){
     voltage = (adc_raw * 3.3 / 4095.0); //importante poner el cero, para forzar la interpretación de la división como una operación de punto flotante.
     printf("Voltage: %2.2f V\n", voltage);
 
-     // Convertir el voltaje a distancia en centímetros
+    // Convertir el voltaje a distancia en centímetros
     float distance_mm = voltage * (100.0 / 3.3); 
     printf("Distance: %2.2f mm\n", distance_mm);
 
