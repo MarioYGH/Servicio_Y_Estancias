@@ -1,9 +1,9 @@
-/*
-Autor: Mario Garcia
-Programa Para Marcha Robot 
-date created: 25/02/24
-last modified: 25/02/24
-*/
+
+#Autor: Mario Garcia
+#Programa Para Marcha Robot 
+#date created: 25/02/24
+#last modified: 25/02/24
+
 
 from time import sleep
 from machine import Pin
