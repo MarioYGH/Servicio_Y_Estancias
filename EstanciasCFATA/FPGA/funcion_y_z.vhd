@@ -1,5 +1,9 @@
+-- Se subio con exito este programa al FPGA, los pines los encuentras en el manual de usuario 
 library IEEE;
-use ieee.std_logic_1164.all; -- Libreria estandar 
+use IEEE.std_logic_1164.all; -- Libreria estandar 
+use IEEE.std_logic_arith.all; --It allows you to perform arithmetic operations on these types, including addition, subtraction, multiplication, and division.
+use IEEE.std_logic_unsigned.all; --  proporciona operaciones y funciones para manipular tipos de datos std_logic_vector de manera similar a cómo se manipularían los tipos de datos enteros sin signo.
+-- En foros se recomienda utilizar IEEE.std_logic_arith.all, para reemplazar las dos librerias anteriores
 
 entity funcion_y_z is
 	port (
