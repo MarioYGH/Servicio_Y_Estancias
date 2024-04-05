@@ -9,6 +9,7 @@ port(
 	S : in std_logic_vector(1 downto 0); --Seleccion
 	Y : out std_logic --Salida
 	);
+end Mux_4_1;
 --Descripción circuito 
 
 architecture simple of Mux_4_1 is 
