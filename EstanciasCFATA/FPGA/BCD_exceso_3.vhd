@@ -2,14 +2,12 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 
---Blackbox
-
 entity BCD_exceso_3 is 
 port(
 	B : in  std_logic_vector(3 downto 0); --Entrada BCD
 	E : out std_logic_vector(3 downto 0); --Salida exceso 3
 	);
---Descripción circuito 
+end BCD_exceso_3; 
 
 architecture Decodificador of BCD_exceso_3 is 
 	begin 
