@@ -9,6 +9,7 @@ port(
 	S : in  std_logic_vector(1 downto 0); --Seleccion
 	Y : out std_logic_vector(3 downto 0); --Salida
 	);
+end Demux_2_4;
 --Descripción circuito 
 
 architecture cuadruple of Demux_2_4 is 
