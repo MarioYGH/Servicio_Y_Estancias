@@ -26,7 +26,7 @@ architecture Decodificador of BCD_exceso_3 is
 					when "0111" => E <= "1010";
 					when "1000" => E <= "1011";
 					when "1001" => E <= "1100";
-					when others => E <= "0000"; --Dont care
+					when others => E <= "----"; --Dont care
 				end case;
 			end process;
 		end Decodificador; 
