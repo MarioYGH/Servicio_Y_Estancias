@@ -9,6 +9,7 @@ port(
 	S : in std_logic_vector(2 downto 0); --Seleccion
 	Y : out std_logic --Salida
 	);
+end Mux_8_1;
 --Descripción circuito 
 
 architecture simple of Mux_8_1 is 
