@@ -10,6 +10,7 @@ port(
 	S :              in  std_logic_vector(1 downto 0); --Seleccion
 	Y :              out std_logic_vector(3 downto 0); --Salida
 	);
+end Mux4_4_1;
 --Descripción circuito 
 
 architecture cuadruple of Mux4_4_1 is 
