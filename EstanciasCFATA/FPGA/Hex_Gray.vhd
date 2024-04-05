@@ -5,8 +5,8 @@ use IEEE.std_logic_1164.all;
 
 entity Hex_Gray is 
 port(
-	H : in  std_logic_vector(3 downto 0); --Entrada BCD
-	G : out std_logic_vector(3 downto 0); --Salida 7 segmentos 
+	H : in  std_logic_vector(3 downto 0); --Entrada Hexadecimal
+	G : out std_logic_vector(3 downto 0); --Salida Gray
 	); 
 end Hex_Gray; 
 
