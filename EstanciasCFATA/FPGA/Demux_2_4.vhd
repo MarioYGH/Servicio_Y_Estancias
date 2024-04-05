@@ -1,4 +1,3 @@
---Multiplexor cuadruple, tiene 4 entradas y cada una es otro multiplexor, es un conjunto de multiplexores con la misma señal de control 
 library IEEE;
 use IEEE.std_logic_1164.all;
 
