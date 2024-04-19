@@ -6,7 +6,7 @@ use IEEE.std_logic_1164.all;
 entity BCD_7_segmentos is 
 port(
 	B : in  std_logic_vector(3 downto 0); --Entrada BCD
-	S : out std_logic_vector(7 downto 1); --Salida 7 segmentos 
+	S : out std_logic_vector(7 downto 1) --Salida 7 segmentos 
 	); 
 end BCD_7_segmentos;
 
