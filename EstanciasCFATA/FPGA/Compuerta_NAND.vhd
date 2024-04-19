@@ -10,7 +10,7 @@ use ieee.std_logic_1164.all -- Libreria estandar
 entity Compuerta_NAND is
 	port (
 	   A, B : in std_logic; -- Entradas simples
-           F:     out std_logic; -- Salida simple
+           F:     out std_logic -- Salida simple
 	);
 end Compuerta_NAND;
 
