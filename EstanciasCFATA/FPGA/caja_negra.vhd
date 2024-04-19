@@ -10,7 +10,7 @@ entity caja_negra is -- entity palabra reservada para inicializar la declaració
     A, B : in     std_logic; -- Entradas simples 
     X    : out    std_logic; -- Salida simple
     Y    : inout  std_logic; -- Bi-direccional
-    W    : buffer std_logic; -- Salida retroalimentada
+    W    : buffer std_logic -- Salida retroalimentada
 	);
 end caja_negra; -- cierre
 	
