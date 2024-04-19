@@ -2,16 +2,16 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 
-entity candado_c is
+entity Candado_c is
 	port(
 		D  : in  std_logic; --Entrada datos 
 		LD	: in  std_logic; --Carga datos
 		Clr: in  std_logic; --Borrado 
 		Q	: out std_logic  --Salida
 	);
-	end candado;
+	end Candado_c;
 
-architecture Simple of Candado is 
+architecture Simple of Candado_c is 
 	begin
 		process(D, LD, Clr)
 			begin 
