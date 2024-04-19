@@ -21,6 +21,7 @@ architecture Simple of Candado_cs is
 				else
 					Q <= D;
 				end if;
-			end process;
-		end Simple;
+			end if;
+		end process;
+	end Simple;
 	
