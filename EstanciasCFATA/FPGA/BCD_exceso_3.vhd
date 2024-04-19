@@ -5,7 +5,7 @@ use IEEE.std_logic_1164.all;
 entity BCD_exceso_3 is 
 port(
 	B : in  std_logic_vector(3 downto 0); --Entrada BCD
-	E : out std_logic_vector(3 downto 0); --Salida exceso 3
+	E : out std_logic_vector(3 downto 0) --Salida exceso 3
 	);
 end BCD_exceso_3; 
 
