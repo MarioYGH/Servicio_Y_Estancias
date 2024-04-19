@@ -7,7 +7,7 @@ entity Demux_2_4neg is
 port(
 	X : in  std_logic; --Entradas
 	S : in  std_logic_vector(1 downto 0); --Seleccion
-	Y : out std_logic_vector(3 downto 0); --Salida
+	Y : out std_logic_vector(3 downto 0) --Salida
 	);
 end Demux_2_4neg;
 --Descripción circuito 
