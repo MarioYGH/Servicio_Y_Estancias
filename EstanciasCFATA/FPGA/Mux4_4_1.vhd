@@ -8,7 +8,7 @@ entity Mux4_4_1 is
 port(
 	I0, I1, I2, I3 : in  std_logic_vector(3 downto 0); --Entradas
 	S :              in  std_logic_vector(1 downto 0); --Seleccion
-	Y :              out std_logic_vector(3 downto 0); --Salida
+	Y :              out std_logic_vector(3 downto 0) --Salida
 	);
 end Mux4_4_1;
 --Descripción circuito 
