@@ -15,8 +15,8 @@ architecture Simple of Candado_cs is
 	begin
 		process(D, LD, Clr)
 			begin 
-				if (LD='0') then 
-					if (CLe='0')then
+				if (LD='1') then 
+					if (Clr='0') then
 						Q <= '0';
 				else
 					Q <= D;
