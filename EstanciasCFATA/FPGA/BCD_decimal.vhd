@@ -5,7 +5,7 @@ use IEEE.std_logic_1164.all;
 entity BCD_decimal is 
 port(
 	B : in  std_logic_vector(3 downto 0); --Entrada BCD
-	D : out std_logic_vector(9 downto 0); --Salidas decimales
+	D : out std_logic_vector(9 downto 0) --Salidas decimales
 	); 
 end BCD_decimal; 
 
