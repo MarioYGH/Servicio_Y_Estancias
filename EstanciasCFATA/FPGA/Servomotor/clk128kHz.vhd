@@ -9,7 +9,7 @@ entity clk128kHz is
 	Port (
 			clk : in std_logic; --señal de 50MHz del FPGA
 			reset : in std_logic; --Reset
-			clk128Khz : out std_logic --Señal de reloj
+			clk_128khz : out std_logic --Señal de reloj
 	);
 end clk128kHz;
 
