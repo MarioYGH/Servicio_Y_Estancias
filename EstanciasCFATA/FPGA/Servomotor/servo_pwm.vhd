@@ -18,7 +18,7 @@ architecture simple of servo_pwm is
 signal cnt : unsigned(12 downto 0);
 --Temporal signal used to generate the PWM pulse 
 signal pwmi : unsigned(8 downto 0);
-signal pw : std_logic_vector(8 down to 0);
+signal pw : std_logic_vector(8 downto 0);
 signal posicioon: unsigned (6 downto 0);
 
 begin 
@@ -48,7 +48,7 @@ begin
 if (posicioon < 90) then 
 pwmi <= ((unsigned("00" & posicion))+68);
 else
-pw <= "010100000"
+pw <= "010100000";
 pwmi <= (unsigned(pw));
 end if;
 end process comparador_90;
@@ -56,7 +56,3 @@ end process comparador_90;
 servo <= '1' when (cnt < pwmi) else '0';
 
 end simple;
-
-
-
-
