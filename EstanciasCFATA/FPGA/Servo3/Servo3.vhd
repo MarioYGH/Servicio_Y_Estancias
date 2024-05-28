@@ -6,10 +6,10 @@ entity Servo3 is
         clk : in std_logic;      -- Reloj principal del FPGA
         reset : in std_logic;    -- Señal de reset
         start : in std_logic;    -- Botón para iniciar
-        servo1 : out std_logic;  -- Salida PWM para el servomotor 1
-        servo2 : out std_logic;  -- Salida PWM para el servomotor 2
-        servo3 : out std_logic;  -- Salida PWM para el servomotor 3
-        servo4 : out std_logic   -- Salida PWM para el servomotor 4
+        servo1 : out std_logic;  -- Salida PWM para el servomotor 1 (Superior Izquierdo)
+        servo2 : out std_logic;  -- Salida PWM para el servomotor 2 (Superior Derecho)
+        servo3 : out std_logic;  -- Salida PWM para el servomotor 3 (Rodilla Izquierda)
+        servo4 : out std_logic   -- Salida PWM para el servomotor 4 (Rodilla Derecha)
     );
 end Servo3;
 
