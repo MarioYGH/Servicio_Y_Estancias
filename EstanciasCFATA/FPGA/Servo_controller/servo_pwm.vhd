@@ -13,7 +13,7 @@ end servo_pwm;
 
 architecture behavioral of servo_pwm is
     signal cnt : unsigned(12 downto 0) := (others => '0'); -- Contador
-    signal pwmi : unsigned(9 downto 0); -- Señal temporal para generar el pulso PWM
+    signal pwmi : unsigned(12 downto 0); -- Señal temporal para generar el pulso PWM
 begin
     -- Contador de 128kHz
     process (reset, clk_128khz)
@@ -36,7 +36,9 @@ begin
         -- El ancho de pulso varía desde 1ms (0 grados) hasta 2ms (120 grados)
         -- La frecuencia de la señal PWM es de 50Hz (periodo de 20ms)
         -- El número de ciclos de reloj de 128kHz en 1ms es 128 ciclos
-        pwmi <= (128 + (unsigned(posicion) * 2));
+		  -- El número de ciclos de reloj de 128kHz en 2ms es 256 ciclos
+        -- Por lo tanto, el número de ciclos para un rango de 0 a 120 grados es de 128 a 256 ciclos
+        pwmi <= to_unsigned(128, 13) + resize(unsigned(posicion)*2, 13);
     end process;
 
     -- Generar la señal PWM
