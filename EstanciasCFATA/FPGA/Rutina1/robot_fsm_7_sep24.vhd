@@ -14,21 +14,26 @@ end robot_fsm;
 architecture fsm_arch of robot_fsm is
     signal clk_128khz : std_logic;
     signal posicion1, posicion2, posicion3, posicion4 : std_logic_vector(6 downto 0);
-    type state_type is (idle, step1, step2, step3, step4, step5, step6, step7, step8, step9, rest);
+    type state_type is (idle, step1, step2, step3, rest);
     signal state, next_state : state_type;
     signal counter : integer := 0;
 
     -- Constantes de delay específicas para cada paso
     constant DELAY1 : integer := 50000000; -- 1 segundo
     constant DELAY2 : integer := 25000000; -- 0.5 segundos
-    -- Agrega más constantes de delay según sea necesario
     signal delay_value : integer := 50000000; -- Valor de delay por defecto
 
-    -- Posiciones iniciales
-    constant INIT_POS1 : std_logic_vector(6 downto 0) := "0101001";
-    constant INIT_POS2 : std_logic_vector(6 downto 0) := "0011000";
-    constant INIT_POS3 : std_logic_vector(6 downto 0) := "0101111";
-    constant INIT_POS4 : std_logic_vector(6 downto 0) := "1000011";
+    -- Posiciones iniciales (todos los motores en 0°)
+    constant INIT_POS1 : std_logic_vector(6 downto 0) := "0101001"; -- M1 cadera derecha (0°)
+    constant INIT_POS2 : std_logic_vector(6 downto 0) := "0011000"; -- M2 cadera izquierda (0°)
+    constant INIT_POS3 : std_logic_vector(6 downto 0) := "1000001"; -- M3 rodilla derecha (0°)
+    constant INIT_POS4 : std_logic_vector(6 downto 0) := "0111110"; -- M4 rodilla izquierda (0°)
+
+    -- Posiciones de movimiento para la caminata, ajustando el sentido de los motores
+    constant MOVE_POS1 : std_logic_vector(6 downto 0) := "0110100"; -- M1 cadera derecha (antihorario, +30°)
+    constant MOVE_POS2 : std_logic_vector(6 downto 0) := "0001110"; -- M2 cadera izquierda (horario, +30°)
+    constant MOVE_POS3 : std_logic_vector(6 downto 0) := "0111111"; -- M3 rodilla derecha (antihorario, +20°)
+    constant MOVE_POS4 : std_logic_vector(6 downto 0) := "0100001"; -- M4 rodilla izquierda (horario, -20°)
 
 begin
     -- Instanciación del módulo del divisor de frecuencia
@@ -97,91 +102,38 @@ begin
                     delay_value <= DELAY1;
                 else
                     next_state <= idle;
-                    delay_value <= DELAY1;  -- Asegurar que se establezca un valor válido
+                    delay_value <= DELAY1;
                 end if;
 
-				when step1 =>
-                -- Todos en su PI
-                posicion2 <= INIT_POS2;
-                posicion4 <= INIT_POS4;
+            when step1 =>
+                -- Posición inicial (todos los motores en 0°)
                 posicion1 <= INIT_POS1;
+                posicion2 <= INIT_POS2;
                 posicion3 <= INIT_POS3;
+                posicion4 <= INIT_POS4;
                 next_state <= step2;
                 delay_value <= DELAY1;
-					 
+
             when step2 =>
-                -- Mover M2 de su PI a 0000100
-                posicion2 <= "0000100";
-                posicion1 <= INIT_POS1;
-                posicion3 <= INIT_POS3;
-                posicion4 <= INIT_POS4;
+                -- Mover M1 (cadera derecha adelante, antihorario) y M3 (rodilla derecha flexiona, antihorario)
+                posicion1 <= MOVE_POS1;
+                posicion3 <= MOVE_POS3;
                 next_state <= step3;
                 delay_value <= DELAY1;
 
             when step3 =>
-                -- Mover M4 de su PI a 0010111, M2 en la posición anterior y el resto en su PI
-                posicion4 <= "0010111";
-                posicion2 <= "0000100";
-                posicion1 <= INIT_POS1;
-                posicion3 <= INIT_POS3;
-                next_state <= step4;
-                delay_value <= DELAY1;
-
-            when step4 =>
-                -- M2 de su posición anterior a 0001110
-                posicion2 <= "0001110";
-                posicion4 <= "0010111";
-                posicion1 <= INIT_POS1;
-                posicion3 <= INIT_POS3;
-                next_state <= step5;
-                delay_value <= DELAY1;
-
-            when step5 =>
-                -- M4 de su posición anterior a 0110111
-                posicion4 <= "0110111";
-                posicion2 <= "0001110";
-                posicion1 <= INIT_POS1;
-                posicion3 <= INIT_POS3;
-                next_state <= step6;
-                delay_value <= DELAY1;
-
-            when step6 =>
-                -- M1 de su PI a 0010111
-                posicion1 <= "0010111";
-                posicion2 <= "0001110";
-                posicion3 <= INIT_POS3;
-                posicion4 <= "0110111";
-                next_state <= step7;
-                delay_value <= DELAY1;
-
-            when step7 =>
-                -- M3 de su PI a 1111111
-                posicion3 <= "1111111";
-                posicion1 <= "0010111";
-                posicion2 <= "0001110";
-                posicion4 <= "0110111";
-                next_state <= step8;
-                delay_value <= DELAY2;
-
-            when step8 =>
-                -- M1 pasa a su PI
-                posicion1 <= INIT_POS1;
-                posicion2 <= "0001110";
-                posicion3 <= "1111111";
-                posicion4 <= "0110111";
-                next_state <= step9;
-                delay_value <= DELAY1;
-
-            when step9 =>
-                -- M2 y M4 pasan a su PI
-                posicion2 <= INIT_POS2;
-                posicion4 <= INIT_POS4;
-                posicion1 <= INIT_POS1;
-                posicion3 <= INIT_POS3;
+                -- Mover M2 (cadera izquierda adelante, horario) y M4 (rodilla izquierda flexiona, horario)
+                posicion2 <= MOVE_POS2;
+                posicion4 <= MOVE_POS4;
                 next_state <= rest;
                 delay_value <= DELAY1;
 
             when rest =>
+                -- Volver a la posición inicial
+                posicion1 <= INIT_POS1;
+                posicion2 <= INIT_POS2;
+                posicion3 <= INIT_POS3;
+                posicion4 <= INIT_POS4;
                 next_state <= idle;
                 delay_value <= DELAY1;
 
