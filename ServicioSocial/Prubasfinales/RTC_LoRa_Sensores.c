@@ -240,22 +240,13 @@ static void lora_task(void *arg){
     uart_write_bytes(UART_2_PORT, "AT+ADDRESS=200\r\n", strlen("AT+ADDRESS=200\r\n"));  // Dirección del LoRa
     vTaskDelay(1000 / portTICK_PERIOD_MS);  // Espera para que se configure
 
-    while (1) {
-        // Enviar "HELLO" al otro LoRa
-        uart_write_bytes(UART_2_PORT, "AT+SEND=200,5,HELLO\r\n", strlen("AT+SEND=200,5,HELLO\r\n"));
+    ESP_LOGI(TAG, "Sent 'HELLO' to LoRa module.");
+    // Enviar "HELLO" al otro LoRa
+    uart_write_bytes(UART_2_PORT, "AT+SEND=200,5,HELLO\r\n", strlen("AT+SEND=200,5,HELLO\r\n"));    
 
-        ESP_LOGI(TAG, "Sent 'HELLO' to LoRa module.");
-
-        // Espera de 5 segundos
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
-        
-        // Recibir respuesta (opcional)
-        int len = uart_read_bytes(UART_2_PORT, data, BUF_SIZE, 100 / portTICK_PERIOD_MS);
-        if (len > 0) {
-            data[len] = '\0';
-            ESP_LOGI(TAG, "Received: %s", data);
-        }
-    }
+    ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
+        esp_deep_sleep(300000000); // 5 minutes in microseconds
+        // For 12 hours, change to: esp_deep_sleep(43200000000);
 }
 
 void app_main(void) {
@@ -292,10 +283,6 @@ void app_main(void) {
 
         xTaskCreate(lora_task, "lora_task", ECHO_TASK_STACK_SIZE, NULL, 10, NULL);
 
-         vTaskDelay(pdMS_TO_TICKS(1000));
-
-        ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
-        esp_deep_sleep(300000000); // 5 minutes in microseconds
-        // For 12 hours, change to: esp_deep_sleep(43200000000);
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
