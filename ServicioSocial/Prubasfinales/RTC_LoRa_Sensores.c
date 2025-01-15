@@ -230,7 +230,7 @@ void read_sensor(int sensor_index, adc_channel_t channel) {
 }
 
 static void lora_task(void *arg) {
-    char message[128];  // Buffer para el mensaje a enviar
+    char message[256];  // Incrementa el tamaño si es necesario para incluir todos los datos.
 
     // Configuración inicial para los comandos AT
     uart_write_bytes(UART_2_PORT, "AT+OPMODE=1\r\n", strlen("AT+OPMODE=1\r\n"));
@@ -241,29 +241,30 @@ static void lora_task(void *arg) {
 
     ds1307_read_time(); // Asegurarse de obtener la hora actual antes de enviar
 
-    snprintf(message, sizeof(message), "Date: %02d/%02d/20%02d Time: %02d:%02d:%02d\n",
+    // Concatenar fecha y hora
+    snprintf(message, sizeof(message), "Date:%02d/%02d/20%02d Time:%02d:%02d:%02d;",
              date, month, year, hours, minutes, seconds);
 
+    // Concatenar datos de sensores habilitados
     for (int i = 0; i < N_SENSORS; i++) {
         if (sensor_states[i]) {
             char sensor_data[64];
-            snprintf(sensor_data, sizeof(sensor_data), "Sensor %d: %.2f mm\n", i + 1, distances[i]);
+            snprintf(sensor_data, sizeof(sensor_data), "S%d:%.2fmm;", i + 1, distances[i]);
             strncat(message, sensor_data, sizeof(message) - strlen(message) - 1);
         }
     }
 
-    char at_command[256];
+    // Formato final del comando AT
+    char at_command[300];
     snprintf(at_command, sizeof(at_command), "AT+SEND=200,%d,%s\r\n", strlen(message), message);
     uart_write_bytes(UART_2_PORT, at_command, strlen(at_command));
 
-    ESP_LOGI(TAG, "Mensaje enviado por LoRa:\n%s", message);
+    ESP_LOGI(TAG, "Mensaje enviado por LoRa: %s", message);
 
     // Entrar en deep sleep después de enviar
     ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
     esp_deep_sleep(300000000);  // 5 minutos en microsegundos
 }
-
-
 
 void app_main(void) {
     ESP_ERROR_CHECK(uart1_initialization());
