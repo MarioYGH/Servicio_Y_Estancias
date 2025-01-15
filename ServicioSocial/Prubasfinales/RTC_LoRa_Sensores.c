@@ -44,6 +44,8 @@
 
 #define BUF_SIZE 1024
 
+uint8_t hours = 0, minutes = 0, seconds = 0, date = 0, month = 0, year = 0;
+
 static const char *TAG = "System v0.1";
 
 adc_oneshot_unit_handle_t adc1_handle;
@@ -230,24 +232,51 @@ void read_sensor(int sensor_index, adc_channel_t channel) {
     ESP_LOGI(TAG, "Sensor %d Distance: %.2f mm", sensor_index + 1, distances[sensor_index]);
 }
 
-static void lora_task(void *arg){
+static void lora_task(void *arg) {
     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
+    char message[128];  // Buffer para el mensaje a enviar
 
     // Configuración inicial para los comandos AT
     uart_write_bytes(UART_2_PORT, "AT+OPMODE=1\r\n", strlen("AT+OPMODE=1\r\n"));  // Modo propietario
-    vTaskDelay(1000 / portTICK_PERIOD_MS);  // Espera para asegurar que se aplica el comando
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     uart_write_bytes(UART_2_PORT, "AT+ADDRESS=200\r\n", strlen("AT+ADDRESS=200\r\n"));  // Dirección del LoRa
-    vTaskDelay(1000 / portTICK_PERIOD_MS);  // Espera para que se configure
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    ESP_LOGI(TAG, "Sent 'HELLO' to LoRa module.");
-    // Enviar "HELLO" al otro LoRa
-    uart_write_bytes(UART_2_PORT, "AT+SEND=200,5,HELLO\r\n", strlen("AT+SEND=200,5,HELLO\r\n"));    
+    // Obtener la hora actual desde el RTC
+    if (ds1307_read_time() != ESP_OK) {
+        ESP_LOGE(TAG, "Error reading RTC time");
+        free(data);
+        vTaskDelete(NULL);
+        return;
+    }
 
+    // Crear mensaje solo con los sensores habilitados
+    snprintf(message, sizeof(message), "Date: %02d/%02d/20%02d Time: %02d:%02d:%02d\n",
+             date, month, year, hours, minutes, seconds);
+
+    for (int i = 0; i < N_SENSORS; i++) {
+        if (sensor_states[i]) {
+            char sensor_data[64];
+            snprintf(sensor_data, sizeof(sensor_data), "Sensor %d: %.2f mm\n", i + 1, distances[i]);
+            strncat(message, sensor_data, sizeof(message) - strlen(message) - 1);
+        }
+    }
+
+    // Enviar mensaje por LoRa
+    char at_command[256];
+    snprintf(at_command, sizeof(at_command), "AT+SEND=200,%d,%s\r\n", strlen(message), message);
+    uart_write_bytes(UART_2_PORT, at_command, strlen(at_command));
+
+    ESP_LOGI(TAG, "Mensaje enviado por LoRa:\n%s", message);
+
+    free(data);
+
+    // Entrar en deep sleep después de enviar
     ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
-        esp_deep_sleep(300000000); // 5 minutes in microseconds
-        // For 12 hours, change to: esp_deep_sleep(43200000000);
+    esp_deep_sleep(300000000);  // 5 minutos en microsegundos
 }
+
 
 void app_main(void) {
     ESP_ERROR_CHECK(uart1_initialization());
