@@ -123,16 +123,15 @@ static esp_err_t i2c_master_init(void) {
 }
 
 // Función para convertir BCD a decimal
-static uint8_t bcd_to_decimal(uint8_t val) {
-    return ((val / 16 * 10) + (val % 16));
+uint8_t bcd_to_decimal(uint8_t bcd) {
+    return ((bcd >> 4) * 10) + (bcd & 0x0F);
 }
 
-// Función para leer los datos del DS1307
+// Función para leer la hora del RTC DS1307
 static esp_err_t ds1307_read_time(void) {
     uint8_t buffer[7];
     uint8_t reg = 0x00;
 
-    // Escribir dirección de registro inicial
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (DS1307_ADDR << 1) | I2C_MASTER_WRITE, true);
@@ -145,7 +144,6 @@ static esp_err_t ds1307_read_time(void) {
         return ret;
     }
 
-    // Leer datos del RTC
     cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (DS1307_ADDR << 1) | I2C_MASTER_READ, true);
@@ -159,14 +157,13 @@ static esp_err_t ds1307_read_time(void) {
         return ret;
     }
 
-    // Convertir y mostrar la hora
-    uint8_t seconds = bcd_to_decimal(buffer[0] & 0x7F);
-    uint8_t minutes = bcd_to_decimal(buffer[1]);
-    uint8_t hours = bcd_to_decimal(buffer[2] & 0x3F); // Formato 24 horas
-    uint8_t day = bcd_to_decimal(buffer[3]);
-    uint8_t date = bcd_to_decimal(buffer[4]);
-    uint8_t month = bcd_to_decimal(buffer[5]);
-    uint8_t year = bcd_to_decimal(buffer[6]);
+    // Actualizar variables globales
+    seconds = bcd_to_decimal(buffer[0] & 0x7F);
+    minutes = bcd_to_decimal(buffer[1]);
+    hours = bcd_to_decimal(buffer[2] & 0x3F);
+    date = bcd_to_decimal(buffer[4]);
+    month = bcd_to_decimal(buffer[5]);
+    year = bcd_to_decimal(buffer[6]);
 
     ESP_LOGI(TAG, "Hora actual: %02d:%02d:%02d, Fecha: %02d/%02d/20%02d",
              hours, minutes, seconds, date, month, year);
@@ -233,25 +230,17 @@ void read_sensor(int sensor_index, adc_channel_t channel) {
 }
 
 static void lora_task(void *arg) {
-    uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
     char message[128];  // Buffer para el mensaje a enviar
 
     // Configuración inicial para los comandos AT
-    uart_write_bytes(UART_2_PORT, "AT+OPMODE=1\r\n", strlen("AT+OPMODE=1\r\n"));  // Modo propietario
+    uart_write_bytes(UART_2_PORT, "AT+OPMODE=1\r\n", strlen("AT+OPMODE=1\r\n"));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    uart_write_bytes(UART_2_PORT, "AT+ADDRESS=200\r\n", strlen("AT+ADDRESS=200\r\n"));  // Dirección del LoRa
+    uart_write_bytes(UART_2_PORT, "AT+ADDRESS=200\r\n", strlen("AT+ADDRESS=200\r\n"));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    // Obtener la hora actual desde el RTC
-    if (ds1307_read_time() != ESP_OK) {
-        ESP_LOGE(TAG, "Error reading RTC time");
-        free(data);
-        vTaskDelete(NULL);
-        return;
-    }
+    ds1307_read_time(); // Asegurarse de obtener la hora actual antes de enviar
 
-    // Crear mensaje solo con los sensores habilitados
     snprintf(message, sizeof(message), "Date: %02d/%02d/20%02d Time: %02d:%02d:%02d\n",
              date, month, year, hours, minutes, seconds);
 
@@ -263,19 +252,17 @@ static void lora_task(void *arg) {
         }
     }
 
-    // Enviar mensaje por LoRa
     char at_command[256];
     snprintf(at_command, sizeof(at_command), "AT+SEND=200,%d,%s\r\n", strlen(message), message);
     uart_write_bytes(UART_2_PORT, at_command, strlen(at_command));
 
     ESP_LOGI(TAG, "Mensaje enviado por LoRa:\n%s", message);
 
-    free(data);
-
     // Entrar en deep sleep después de enviar
     ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
     esp_deep_sleep(300000000);  // 5 minutos en microsegundos
 }
+
 
 
 void app_main(void) {
@@ -312,6 +299,6 @@ void app_main(void) {
 
         xTaskCreate(lora_task, "lora_task", ECHO_TASK_STACK_SIZE, NULL, 10, NULL);
 
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
