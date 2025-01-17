@@ -57,6 +57,9 @@ static const char *TAG = "System v0.1";
 #define PIN_NUM_CLK  18  // GPIO18
 #define PIN_NUM_CS    5  // GPIO5
 
+sdmmc_card_t *card;
+const char mount_point[] = MOUNT_POINT;
+
 static esp_err_t write_to_file(const char *path, const char *data) {
     ESP_LOGI(TAG, "Opening file %s", path);
     FILE *f = fopen(path, "w");
@@ -369,16 +372,8 @@ void app_main(void) {
     ESP_ERROR_CHECK(i2c_master_init()); // Inicialización del I2C para el RTC
     adc_initialize(); /* ADC initialization */
     gpio_initialize(); /* GPIO initialization */
-    vTaskDelay(pdMS_TO_TICKS(500));
-    sdmmc_card_t *card;
-    const char mount_point[] = MOUNT_POINT;
-    esp_err_t ret = init_sd_card(mount_point, &card);  // Inicializar tarjeta SD
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "SD card initialization failed");
-        return;
-    }
-    vTaskDelay(pdMS_TO_TICKS(500));
-
+   init_sd_card(mount_point, &card);
+    
     while(1) {
         update_sensor_states(); /* Update sensor states from GPIO */
 
@@ -401,11 +396,11 @@ void app_main(void) {
         }
 
         ds1307_read_time(); // Mostrar la hora del RTC
-        ///save_data_to_sd(mount_point);
+        save_data_to_sd(mount_point);
         vTaskDelay(pdMS_TO_TICKS(5000));
 
         // Desmontar la SD para evitar corrupción
-        //esp_vfs_fat_sdcard_unmount(mount_point, card);
+        esp_vfs_fat_sdcard_unmount(mount_point, card);
         ESP_LOGI(TAG, "SD card unmounted");
 
         xTaskCreate(lora_task, "lora_task", ECHO_TASK_STACK_SIZE, NULL, 10, NULL);
