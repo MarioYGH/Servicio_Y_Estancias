@@ -57,22 +57,6 @@ static const char *TAG = "System v0.1";
 #define PIN_NUM_CLK  18  // GPIO18
 #define PIN_NUM_CS    5  // GPIO5
 
-sdmmc_card_t *card;
-const char mount_point[] = MOUNT_POINT;
-
-static esp_err_t write_to_file(const char *path, const char *data) {
-    ESP_LOGI(TAG, "Opening file %s", path);
-    FILE *f = fopen(path, "w");
-    if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for writing");
-        return ESP_FAIL;
-    }
-    fprintf(f, "%s", data);
-    fclose(f);
-    ESP_LOGI(TAG, "File written: %s", data);
-    return ESP_OK;
-}
-
 uint8_t hours = 0, minutes = 0, seconds = 0, date = 0, month = 0, year = 0;
 
 adc_oneshot_unit_handle_t adc1_handle;
@@ -293,111 +277,13 @@ static void lora_task(void *arg) {
     esp_deep_sleep(300000000);  // 5 minutos en microsegundos
 }
 
-static esp_err_t init_sd_card(const char *mount_point, sdmmc_card_t **card_out) {
-    esp_err_t ret;
-
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
-        .max_files = 5,
-        .allocation_unit_size = 16 * 1024
-    };
-
-    ESP_LOGI(TAG, "Initializing SD card");
-    ESP_LOGI(TAG, "Using SPI peripheral");
-
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    spi_bus_config_t bus_cfg = {
-        .mosi_io_num = PIN_NUM_MOSI,
-        .miso_io_num = PIN_NUM_MISO,
-        .sclk_io_num = PIN_NUM_CLK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000,
-    };
-
-    ret = spi_bus_initialize(host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
-        return ret;
-    }
-
-    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot_config.gpio_cs = PIN_NUM_CS;
-    slot_config.host_id = host.slot;
-
-    ESP_LOGI(TAG, "Mounting filesystem");
-    ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, card_out);
-
-    if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(TAG, "Failed to mount filesystem. Ensure SD card lines have pull-up resistors in place.");
-        } else {
-            ESP_LOGE(TAG, "Failed to initialize the card: %s", esp_err_to_name(ret));
-        }
-        return ret;
-    }
-
-    ESP_LOGI(TAG, "Filesystem mounted successfully");
-    sdmmc_card_print_info(stdout, *card_out);
-    return ESP_OK;
-}
-
-
-static void save_data_to_sd(const char *mount_point) {
-    char file_path[128];
-    snprintf(file_path, sizeof(file_path), "%s/sensor_data.txt", mount_point);
-
-    // Formatear los datos para guardar
-    char data[256];
-    snprintf(data, sizeof(data),
-             "Date: %02d/%02d/20%02d, Time: %02d:%02d:%02d, Sensor 1: %.2f mm, Sensor 2: %.2f mm, Sensor 3: %.2f mm\n",
-             date, month, year, hours, minutes, seconds, distances[0], distances[1], distances[2]);
-
-    // Abrir el archivo y escribir los datos
-    ESP_LOGI(TAG, "Saving data to %s", file_path);
-    FILE *file = fopen(file_path, "a");
-    if (file == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for writing");
-        return;
-    }
-    fprintf(file, "%s", data);
-    fclose(file);
-    ESP_LOGI(TAG, "Data saved successfully:\n%s", data);
-}
-
-static void sd_card_task(void *arg) {
-    const char *mount_point = "/sdcard";
-    sdmmc_card_t *card = NULL;
-
-    // Inicializar la tarjeta SD
-    esp_err_t ret = init_sd_card(mount_point, &card);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "SD card initialization failed");
-        vTaskDelete(NULL); // Termina la tarea si falla la inicialización
-    }
-
-    // Asegúrate de que el RTC se lea correctamente antes de guardar
-    ds1307_read_time();
-
-    // Guardar datos en la SD
-    save_data_to_sd(mount_point);
-
-    // Desmontar la tarjeta SD (opcional si se usa una sola vez)
-    esp_vfs_fat_sdcard_unmount(mount_point, card);
-    ESP_LOGI(TAG, "SD card unmounted");
-
-    // Finaliza la tarea
-    vTaskDelete(NULL);
-}
-
-
 void app_main(void) {
     ESP_ERROR_CHECK(uart1_initialization());
     ESP_ERROR_CHECK(uart2_initialization());
     ESP_ERROR_CHECK(i2c_master_init()); // Inicialización del I2C para el RTC
     adc_initialize(); /* ADC initialization */
     gpio_initialize(); /* GPIO initialization */
-    
+     
     while(1) {
         update_sensor_states(); /* Update sensor states from GPIO */
 
@@ -420,8 +306,84 @@ void app_main(void) {
         }
 
         ds1307_read_time(); // Mostrar la hora del RTC
+
+        // Aquí se integra el proceso de inicialización de la SD
+        ESP_LOGI(TAG, "Initializing SD card");
+        const char *mount_point = "/sdcard"; // Punto de montaje
+        sdmmc_card_t *card = NULL;          // Puntero para la tarjeta SD
+        esp_err_t ret;
+
+        // Configuración para el montaje
+        esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+            .format_if_mount_failed = true,
+            .max_files = 5,
+            .allocation_unit_size = 16 * 1024
+        };
+
+        sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+        spi_bus_config_t bus_cfg = {
+            .mosi_io_num = PIN_NUM_MOSI,
+            .miso_io_num = PIN_NUM_MISO,
+            .sclk_io_num = PIN_NUM_CLK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = 4000,
+        };
+
+        // Inicializar el bus SPI
+        ret = spi_bus_initialize(host.slot, &bus_cfg, SDSPI_DEFAULT_DMA);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
+            vTaskDelay(pdMS_TO_TICKS(5000));
+            continue; // Continuar con el siguiente ciclo
+        }
+
+        sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+        slot_config.gpio_cs = PIN_NUM_CS;
+        slot_config.host_id = host.slot;
+
+        // Montar el sistema de archivos
+        ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &card);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to mount filesystem: %s", esp_err_to_name(ret));
+            spi_bus_free(host.slot);
+            vTaskDelay(pdMS_TO_TICKS(5000));
+            continue; // Continuar con el siguiente ciclo
+        }
+
+        ESP_LOGI(TAG, "Filesystem mounted successfully");
+        sdmmc_card_print_info(stdout, card);
+
+        // Escribir un archivo en la tarjeta SD
+        char data[256];
+        snprintf(data, sizeof(data),
+                "Date: %02d/%02d/20%02d, Time: %02d:%02d:%02d, Sensor 1: %.2f mm, Sensor 2: %.2f mm, Sensor 3: %.2f mm\n",
+                date, month, year, hours, minutes, seconds, distances[0], distances[1], distances[2]);
+
+        const char *file_path = "/sdcard/sensor.txt";
+
+        FILE *file = fopen(file_path, "a");  
+        if (file == NULL) {
+            ESP_LOGE(TAG, "Failed to open file for writing");
+        } else {
+            // Escribir los datos en el archivo
+            fprintf(file, "%s", data);
+            fclose(file);
+            ESP_LOGI(TAG, "Data saved successfully:\n%s", data);
+        }
+
+        // Asegurarse de que se desmonta correctamente el sistema de archivos después de escribir
+        esp_vfs_fat_sdcard_unmount(mount_point, card);
+        ESP_LOGI(TAG, "Card unmounted");
+        spi_bus_free(host.slot);
+
+
+        // Desmontar el sistema de archivos
+        esp_vfs_fat_sdcard_unmount(mount_point, card);
+        ESP_LOGI(TAG, "Card unmounted");
+        spi_bus_free(host.slot);
+
         vTaskDelay(pdMS_TO_TICKS(5000));
-        xTaskCreate(sd_card_task, "sd_card_task", 8192, NULL, 5, NULL);
 
         xTaskCreate(lora_task, "lora_task", ECHO_TASK_STACK_SIZE, NULL, 10, NULL);
 
