@@ -67,9 +67,9 @@ static bool sensor_states[N_SENSORS] = {true, true, true}; // States for each se
 
 // Coefficients for the distance conversion polynomials
 static const float coefficients[N_SENSORS][6] = {
-    {0.43845, -3.1136, 6.6372, -5.4496, 35.144, 0.53767}, // Sensor 1
-    {0.43845, -3.1136, 6.6372, -5.4496, 35.144, 0.53767}, // Sensor 2
-    {0.43845, -3.1136, 6.6372, -5.4496, 35.144, 0.53767}  // Sensor 3
+    {1.4985,  -13.4317, 42.569, -58.6858, 64.9932, 1.3185}, // Sensor 1
+    {1.4985,  -13.4317, 42.569, -58.6858, 64.9932, 1.3185}, // Sensor 2
+    {1.4985,  -13.4317, 42.569, -58.6858, 64.9932, 1.3185}  // Sensor 3
 };
 
 //Uart LoRa
@@ -231,6 +231,11 @@ void calculate_distance(int sensor_index, float voltage) {
                                coeff[3]*voltage*voltage +
                                coeff[4]*voltage +
                                coeff[5];
+   // Compensar el desplazamiento inicial
+    distances[sensor_index] -= 1.32;
+    if (distances[sensor_index] < 0) {
+        distances[sensor_index] = 0; // Evitar valores negativos
+    }                            
 }
 
 void read_sensor(int sensor_index, adc_channel_t channel) {
@@ -274,7 +279,9 @@ static void lora_task(void *arg) {
 
     // Entrar en deep sleep después de enviar
     ESP_LOGI(TAG, "Entering deep sleep for 5 minutes...");
-    esp_deep_sleep(300000000);  // 5 minutos en microsegundos
+    esp_deep_sleep(43200000000);  // 12hrs en microsegundos
+        // For 12 hours, change to: esp_deep_sleep(43200000000);
+        // For 5 min, change to: esp_deep_sleep(300000000);
 }
 
 void app_main(void) {
@@ -283,22 +290,26 @@ void app_main(void) {
     ESP_ERROR_CHECK(i2c_master_init()); // Inicialización del I2C para el RTC
     adc_initialize(); /* ADC initialization */
     gpio_initialize(); /* GPIO initialization */
+    vTaskDelay(pdMS_TO_TICKS(500));
      
     while(1) {
         update_sensor_states(); /* Update sensor states from GPIO */
 
         if (sensor_states[0]) {
+            adc_raws[1] = 0;
+            adc_raws[2] = 0;
             read_sensor(0, ADC1_CHAN7);
         } else {
             ESP_LOGI(TAG, "Sensor 1 is disabled");
         }
-
+       
         if (sensor_states[1]) {
+            adc_raws[2] = 0;
             read_sensor(1, ADC1_CHAN4);
         } else {
             ESP_LOGI(TAG, "Sensor 2 is disabled");
         }
-
+        
         if (sensor_states[2]) {
             read_sensor(2, ADC1_CHAN5);
         } else {
@@ -306,7 +317,7 @@ void app_main(void) {
         }
 
         ds1307_read_time(); // Mostrar la hora del RTC
-
+        vTaskDelay(pdMS_TO_TICKS(500));
         // Aquí se integra el proceso de inicialización de la SD
         ESP_LOGI(TAG, "Initializing SD card");
         const char *mount_point = "/sdcard"; // Punto de montaje
