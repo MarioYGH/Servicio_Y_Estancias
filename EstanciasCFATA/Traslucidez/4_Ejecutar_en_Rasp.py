@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import gradio as gr
-from tflite_runtime.interpreter import Interpreter
+from tflite_runtime.interpreter import Interpreter  # Cambiar importación
 
 # Cargar el modelo TFLite
 interpreter = Interpreter(model_path="blur_classification_model.tflite")
@@ -13,23 +13,18 @@ output_details = interpreter.get_output_details()
 
 # Función para preprocesar la imagen
 def preprocess_image(image):
-    if image is None:
-        return None
-    
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # OpenCV usa BGR, Gradio da RGB
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, (64, 64))  # Ajustar tamaño al esperado por el modelo
-    image = image.astype(np.float32) / 255.0  # Normalizar
+    image = image / 255.0  # Normalizar
     image = np.expand_dims(image, axis=0)  # Añadir dimensión batch
     return image
 
 # Función para predecir el nivel de desenfoque
 def predict_blur(image):
     preprocessed_image = preprocess_image(image)
-    if preprocessed_image is None:
-        return "Error: No se recibió una imagen válida."
 
     # Asignar la entrada al modelo
-    interpreter.set_tensor(input_details[0]['index'], preprocessed_image)
+    interpreter.set_tensor(input_details[0]['index'], preprocessed_image.astype(np.float32))
 
     # Ejecutar la predicción
     interpreter.invoke()
@@ -39,14 +34,14 @@ def predict_blur(image):
     predicted_blur_level = np.argmax(output_data)  # Nivel de desenfoque
     return f"Nivel de desenfoque: {predicted_blur_level}"
 
-# Crear la interfaz Gradio con opción de webcam
+# Crear la interfaz Gradio
 interface = gr.Interface(
     fn=predict_blur,
-    inputs=gr.Camera(label="Captura desde la Webcam"),
+    inputs=gr.Image(type="numpy", label="Sube tu imagen"),
     outputs="text",
     title="Clasificador de Desenfoque",
-    description="Captura una imagen con tu webcam y el modelo predecirá el nivel de desenfoque."
+    description="Sube una imagen y el modelo predirá el nivel de desenfoque."
 )
 
-# Iniciar la aplicación con localhost
-interface.launch(server_name="localhost", server_port=7860, share=True)
+# Iniciar la aplicación
+interface.launch(server_name="0.0.0.0", server_port=7860)
